@@ -1,0 +1,30 @@
+name: Run Wordle Bot
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight (optional, remove if not needed)
+
+jobs:
+  run-wordle-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Bun
+        uses: oven-sh/bun-action@v1
+        with:
+          bun-version: 'latest'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run Wordle Bot
+        run: bun run process-wordle-result.ts
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          TARGET_CHANNEL_ID: ${{ secrets.TARGET_CHANNEL_ID }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          PARSED_WORDLE: ${{ github.event.client_payload }}

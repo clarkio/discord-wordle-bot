@@ -1,0 +1,33 @@
+Requirements:
+- Deno 2 if not Bun (so JavaScript/Node.js)
+- Need a long running process
+    - either listen for messages in a Discord channel
+    - or periodically check for messages in a Discord channel
+- ✅ Need a database to track user wordle results
+    - user
+        - discordId
+        - username
+        - wordles
+            - result (1/6, X/6) (string)
+            - score (number)
+            - hasWon (boolean)
+- ✅ Parse Discord messages - job
+    - ✅ Get username and Discord Id
+    - ✅ Get 1st line of the message by the user
+    - ✅ Get the wordle score by convention X/Y, 1/6, X/6
+- ✅ Capture game history for each user
+- Respond to Discord commands - job
+    - !score
+        - using username that sent the message find and report
+        their total score in a response message
+- clarkio.com/wordle (maybe)
+    - display leaderboard based on data in database
+    - show histograms! wow!
+
+
+
+
+
+
+
+
