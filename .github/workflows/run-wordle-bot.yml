@@ -25,6 +25,4 @@ jobs:
         run: bun run process-wordle-result.ts
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          TARGET_CHANNEL_ID: ${{ secrets.TARGET_CHANNEL_ID }}
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
           PARSED_WORDLE: ${{ github.event.client_payload }}

@@ -28,8 +28,9 @@ interface UserScore {
 
 // client.login(process.env.BOT_TOKEN);
 
-async function processLatestWordleResult(parsedWordle: UserScore | undefined) {
+async function processLatestWordleResult() {
   console.log('***** ITS ALIVE!!!1!!!1! *****');
+  console.log(`The parsed wordle result is: ${process.env.PARSED_WORDLE}`);
   // if (parsedWordle !== undefined) {
   //   if (!wordleResultsData.find((result: any) => result.gameNumber === parsedWordle.gameNumber && result.userId === parsedWordle.userId)) {
   //     const documentAdded = await createDocument(parsedWordle) as Models.Document;
