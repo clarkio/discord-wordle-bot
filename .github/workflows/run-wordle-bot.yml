@@ -1,7 +1,11 @@
 name: Run Wordle Bot
 
 on:
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
+    inputs:
+      client_payload:
+        description: 'Wordle Result'
+        required: true
   repository_dispatch:
     types: discord-wordle-message
 
