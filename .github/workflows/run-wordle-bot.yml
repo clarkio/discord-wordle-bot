@@ -2,8 +2,8 @@ name: Run Wordle Bot
 
 on:
   workflow_dispatch: # Allows manual triggering of the workflow
-  schedule:
-    - cron: '0 0 * * *' # Runs daily at midnight (optional, remove if not needed)
+  repository_dispatch:
+    types: discord-wordle-message
 
 jobs:
   run-wordle-bot:
