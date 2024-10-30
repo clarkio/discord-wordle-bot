@@ -73,12 +73,6 @@ client.on('messageCreate', async (message) => {
     console.log('Scores for Largest Game Number:', scoresForLatestGame);
 
     // ********* LEFT OFF HERE ********* //
-    // Need to find some server or functions service to host this script
-
-    // NoCode solutions/platforms
-    // IFTTT, Zapier, Integromat, Automate.io, Parabola, Airtable, Google Sheets, etc. Make.com, Adalo, Bubble, Webflow,
-    // Pipedream.com -> Discord integration -> Trigger based on new messages in a channel -> run some code
-    // Need more robust solution for sharing current winner(s) after each new result is captured
     // Need to determine logic for calculating past game winners and log them (for now, then will post to Discord)
 
     // Determine the winner(s)
