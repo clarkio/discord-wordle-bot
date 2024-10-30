@@ -18,7 +18,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    - name: Set up Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: 'latest'
+
+    - name: Install dependencies
+      run: bun install
+
     - name: Run script
-      run: node process-wordle-result.js
+      run: bun run process-wordle-result.ts
       env:
         CLIENT_PAYLOAD: ${{ github.event.inputs.client_payload }}
