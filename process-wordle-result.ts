@@ -42,12 +42,12 @@ client.once('ready', async () => {
   } catch (error) {
     console.error('Error processing Wordle Result:', error);
   } finally {
+    console.log('Wordle finished processing. Closing connection...');
     await client.destroy();
   }
 });
 
 async function processLatestWordleResult(parsedWordle: UserScore | undefined) {
-  console.log(`Parsed Wordle: ${parsedWordle?.userName}`);
   if (parsedWordle !== undefined && Object.keys(parsedWordle).length > 0) {
     if (!wordleResultsData.find((result: any) => result.gameNumber === parsedWordle.gameNumber && result.userId === parsedWordle.userId)) {
       const documentAdded = await createDocument(parsedWordle) as Models.Document;
@@ -55,7 +55,7 @@ async function processLatestWordleResult(parsedWordle: UserScore | undefined) {
         wordleResultsData.push(parsedWordle);
         wordleResultsData.sort((a, b) => b.gameNumber - a.gameNumber);
         console.log(`Result added to the database: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
-        console.dir(wordleResultsData);
+        // console.dir(wordleResultsData);
       }
     } else {
       console.log(`Result already exists: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
