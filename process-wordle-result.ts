@@ -39,8 +39,15 @@ client.once('ready', async () => {
 
   try {
     const wordleData = JSON.parse(process.env.PARSED_WORDLE || '{}');
-    const winnerMessage = await processLatestWordleResult(wordleData as unknown as UserScore || undefined);
-    winnerMessage ? channel.messages.channel.send(winnerMessage) : console.log('No winner message to send.');
+    const results = await processLatestWordleResult(wordleData as unknown as UserScore || undefined);
+    if (results) {
+      console.log('Current Winner(s):', results.winners);
+      const winnerMessage = `Current Winner${results.winners.length > 1 ? "s" : ""} for Wordle ${results.latestGameNumber.toLocaleString()} with ${results.minAttempts} attempt${results.minAttempts > 1 ? 's' : ''}: ${results.winners.join(', ')}`;
+      console.log(winnerMessage);
+      isLatestWordleAWinner(wordleData, results.winners) ? channel.messages.channel.send(winnerMessage) : console.log('No winner change so no message to send.');
+    } else {
+      console.log('No results from processing the latest Wordle result.');
+    }
   } catch (error) {
     console.error('Error processing Wordle Result:', error);
   } finally {
@@ -50,7 +57,14 @@ client.once('ready', async () => {
   }
 });
 
-async function processLatestWordleResult(parsedWordle: UserScore | undefined): Promise<string | undefined> {
+function isLatestWordleAWinner(parsedWordle: UserScore | undefined, winners: string[]): boolean {
+  return parsedWordle !== undefined
+    && Object.keys(parsedWordle).length > 0
+    && winners.length > 0
+    && (winners.includes(parsedWordle.userName) || winners.includes(`<@${parsedWordle.userId}>`));
+}
+
+async function processLatestWordleResult(parsedWordle: UserScore | undefined): Promise<{ minAttempts: number, winners: string[], latestGameNumber: number; } | undefined> {
   if (parsedWordle !== undefined && Object.keys(parsedWordle).length > 0) {
     if (!wordleResultsData.find((result: any) => result.gameNumber === parsedWordle.gameNumber && result.userId === parsedWordle.userId)) {
       const documentAdded = await createDocument(parsedWordle) as Models.Document;
@@ -69,11 +83,9 @@ async function processLatestWordleResult(parsedWordle: UserScore | undefined): P
     const scoresForLatestGame = wordleResultsData.filter((score) => score.gameNumber === latestGameNumber);
     console.log('Scores for Latest Game Number:', scoresForLatestGame);
 
-    const results = determineWinners(scoresForLatestGame);
-    console.log('Current Winner(s):', results.winners);
-    const winnerMessage = `Current Winner${results.winners.length > 1 ? "s" : ""} for Wordle ${latestGameNumber.toLocaleString()} with ${results.minAttempts} attempt${results.minAttempts > 1 ? 's' : ''}: ${results.winners.join(', ')}`;
-    console.log(winnerMessage);
-    return winnerMessage;
+    let results = determineWinners(scoresForLatestGame);
+    results.latestGameNumber = latestGameNumber;
+    return results;
   }
 }
 
@@ -88,7 +100,7 @@ function findLatestGameNumber(wordleResults: UserScore[]): number {
   return latestGame ? latestGame.gameNumber : 0;
 }
 
-function determineWinners(scoresForLargestGame: UserScore[]): { minAttempts: number, winners: string[]; } {
+function determineWinners(scoresForLargestGame: UserScore[]): { minAttempts: number, winners: string[], latestGameNumber: number; } {
   let minAttempts = Infinity;
   const winners: string[] = [];
 
@@ -104,7 +116,7 @@ function determineWinners(scoresForLargestGame: UserScore[]): { minAttempts: num
     }
   }
 
-  return { minAttempts, winners };
+  return { minAttempts, winners, latestGameNumber: scoresForLargestGame[0].gameNumber || 0 };
 }
 
 await client.login(process.env.BOT_TOKEN);
