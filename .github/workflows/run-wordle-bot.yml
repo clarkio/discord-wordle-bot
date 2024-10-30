@@ -29,4 +29,4 @@ jobs:
     - name: Run script
       run: bun run process-wordle-result.ts
       env:
-        CLIENT_PAYLOAD: ${{ github.event.inputs.client_payload }}
+        PARSED_WORDLE: ${{ github.event.inputs.client_payload }}
