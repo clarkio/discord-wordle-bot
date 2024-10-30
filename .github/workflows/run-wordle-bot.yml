@@ -6,6 +6,7 @@ on:
       client_payload:
         description: 'Wordle Result'
         required: true
+        type: string
   repository_dispatch:
     types: discord-wordle-message
 
