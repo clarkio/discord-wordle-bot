@@ -64,10 +64,10 @@ async function processLatestWordleResult(parsedWordle: UserScore | undefined): P
     }
 
     const latestGameNumber = findLatestGameNumber(wordleResultsData);
-    console.log('Largest Game Number:', latestGameNumber);
+    console.log('Latest Game Number:', latestGameNumber);
 
     const scoresForLatestGame = wordleResultsData.filter((score) => score.gameNumber === latestGameNumber);
-    console.log('Scores for Largest Game Number:', scoresForLatestGame);
+    console.log('Scores for Latest Game Number:', scoresForLatestGame);
 
     const results = determineWinners(scoresForLatestGame);
     console.log('Current Winner(s):', results.winners);

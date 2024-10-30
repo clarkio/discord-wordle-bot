@@ -9,6 +9,8 @@ const client = new Client({
   ],
 });
 
+const messageProcessLimit = 100;
+
 interface UserScore {
   userId: string;
   userName: string;
@@ -55,6 +57,7 @@ async function fetchAllMessages(channel: TextChannel) {
       }
     });
 
+    if (messageProcessedCount >= messageProcessLimit) return;
     lastMessageId = messages.last()?.id;
   }
 }
