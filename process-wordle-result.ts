@@ -26,11 +26,29 @@ const wordleResultsData = dbData.documents.map((doc) => ({
   attempts: doc.attempts,
 } as UserScore));
 
-client.login(process.env.BOT_TOKEN);
+client.once('ready', async () => {
+  console.log(`Logged in as ${client.user?.tag}!`);
+
+  const channel = await client.channels.fetch(TARGET_CHANNEL_ID) as TextChannel;
+  if (!channel) {
+    console.error('Channel not found!');
+    await client.destroy();
+    return;
+  }
+
+  try {
+    const wordleData = JSON.parse(process.env.PARSED_WORDLE || '{}');
+    await processLatestWordleResult(wordleData as unknown as UserScore || undefined);
+  } catch (error) {
+    console.error('Error processing Wordle Result:', error);
+  } finally {
+    await client.destroy();
+  }
+});
 
 async function processLatestWordleResult(parsedWordle: UserScore | undefined) {
-  console.log(`Parsed Wordle: ${parsedWordle}`);
-  if (parsedWordle !== undefined) {
+  console.log(`Parsed Wordle: ${parsedWordle?.userName}`);
+  if (parsedWordle !== undefined && Object.keys(parsedWordle).length > 0) {
     if (!wordleResultsData.find((result: any) => result.gameNumber === parsedWordle.gameNumber && result.userId === parsedWordle.userId)) {
       const documentAdded = await createDocument(parsedWordle) as Models.Document;
       if (documentAdded) {
@@ -45,4 +63,4 @@ async function processLatestWordleResult(parsedWordle: UserScore | undefined) {
   }
 }
 
-processLatestWordleResult(process.env.PARSED_WORDLE as unknown as UserScore || undefined);
+await client.login(process.env.BOT_TOKEN);

@@ -3,6 +3,8 @@ import { Client, Databases, ID, Query } from 'node-appwrite';
 const client = new Client();
 const DATABASE_ID = process.env.APPWRITE_DATABASE_ID || 'ENV Key Not Found';
 const COLLECTION_ID = process.env.APPWRITE_COLLECTION_ID || 'ENV Key Not Found';
+console.log(`Database ID: ${DATABASE_ID}`);
+console.log(`Collection ID: ${COLLECTION_ID}`);
 
 client
   .setEndpoint("https://cloud.appwrite.io/v1")
