@@ -30,3 +30,9 @@ jobs:
       run: bun run process-wordle-result.ts
       env:
         PARSED_WORDLE: ${{ github.event.inputs.client_payload }}
+        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        TARGET_CHANNEL_ID: ${{ secrets.TARGET_CHANNEL_ID }}
+        APPWRITE_DATABASE_ID: ${{ secrets.APPWRITE_DATABASE_ID }}
+        APPWRITE_COLLECTION_ID: ${{ secrets.APPWRITE_COLLECTION_ID }}
+        APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+        APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
