@@ -93,7 +93,7 @@ function parseWordleResult(message: any): UserScore | undefined {
   const match = WORDLE_PATTERN.exec(message.content);
 
   if (match) {
-    const gameNumber = parseInt(match[1].replace(',', ''));
+    const gameNumber = parseInt(match[1].replace(/,/g, ''));
     const attempts = match[4];
 
     return {

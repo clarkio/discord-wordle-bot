@@ -1,8 +1,9 @@
 Requirements:
-- Deno 2 if not Bun (so JavaScript/Node.js)
-- Need a long running process
+- ✅ Deno 2 if not Bun (so JavaScript/Node.js)
+- ✅ Need a long running process
     - either listen for messages in a Discord channel
     - or periodically check for messages in a Discord channel
+    ** Ended up using a combination of NoCode via pipedream.com and GitHub Actions for now **
 - ✅ Need a database to track user wordle results
     - user
         - discordId
