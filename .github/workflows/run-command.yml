@@ -1,4 +1,4 @@
-name: Run Wordle Bot
+name: Run Wordle Command
 
 on:
   workflow_dispatch:
