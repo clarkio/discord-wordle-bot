@@ -1,5 +1,5 @@
 import { Client, Events, GatewayIntentBits, TextChannel } from 'discord.js';
-import { createDocument, listDocuments, Query } from './db';
+import { createDocument, listDocuments, Query } from '../src/db';
 import type { Models } from 'node-appwrite';
 
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '';

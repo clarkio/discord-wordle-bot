@@ -21,8 +21,9 @@ Requirements:
     - !score
         - using username that sent the message find and report
         their total score in a response message
-- Convert to self hosted bot and deploy somewhere (maybe fly.io)
+- ✅ Convert to self hosted bot and deploy somewhere (maybe fly.io)
 - Remove code that loads all database data into memory and replace with db queries where needed
+- Add more commands
 - clarkio.com/wordle (maybe)
     - display leaderboard based on data in database
     - show histograms! wow!

@@ -1,5 +1,5 @@
 import { Client, Events, GatewayIntentBits, TextChannel, type FetchMessagesOptions } from 'discord.js';
-import { databases, createDocument, listDocuments, Query } from './db';
+import { databases, createDocument, listDocuments, Query } from '../src/db';
 
 const client = new Client({
   intents: [
@@ -17,7 +17,7 @@ interface UserScore {
   gameNumber: number;
   attempts: string;
 }
-const DISCORD_CHANNEL_ID = '942160904764670042';
+const DISCORD_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '';
 const WORDLE_PATTERN = /Wordle (\d{0,3}(,?)\d{1,3}) (🎉 ?)?([X1-6])\/6/;
 
 let wordleResultsData = await listDocuments(undefined, undefined, [

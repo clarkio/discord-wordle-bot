@@ -1,7 +1,7 @@
 import { GatewayIntentBits, TextChannel } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
-import { CustomClient } from './CustomClient';
+import { CustomClient } from '../src/CustomClient';
 
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '';
 const client = new CustomClient({
