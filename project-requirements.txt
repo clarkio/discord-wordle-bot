@@ -17,10 +17,12 @@ Requirements:
     - ✅ Get 1st line of the message by the user
     - ✅ Get the wordle score by convention X/Y, 1/6, X/6
 - ✅ Capture game history for each user
-- Respond to Discord commands - job
+- ✅ Respond to Discord commands - job
     - !score
         - using username that sent the message find and report
         their total score in a response message
+- Convert to self hosted bot and deploy somewhere (maybe fly.io)
+- Remove code that loads all database data into memory and replace with db queries where needed
 - clarkio.com/wordle (maybe)
     - display leaderboard based on data in database
     - show histograms! wow!
