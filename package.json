@@ -11,7 +11,7 @@
     "start:server": "bun run src/server/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
   },
   "devDependencies": {
     "@types/bun": "^1.1.13",
