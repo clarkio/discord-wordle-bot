@@ -1,9 +1,10 @@
-import { Client, Events, GatewayIntentBits, TextChannel } from 'discord.js';
+import { Client, Events, GatewayIntentBits, ModalSubmitFields, TextChannel } from 'discord.js';
 import type { Models } from 'node-appwrite';
 import fs from 'fs';
 import path from 'path';
 import { createDocument, listDocuments, Query } from './db';
 import { CustomClient } from './CustomClient';
+import { ModuleDetectionKind } from 'typescript';
 
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '';
 const isUserTaggingEnabled = process.env.USER_TAGGING_ENABLED === 'true';
@@ -132,52 +133,43 @@ function isLatestWordleAWinner(parsedWordle: UserScore | undefined, winners: str
 async function processLatestWordleResult(parsedWordle: UserScore | undefined): Promise<{ minAttempts: number, winners: string[], latestGameNumber: number; } | undefined> {
   if (parsedWordle !== undefined && Object.keys(parsedWordle).length > 0) {
     // Check if the result already exists in the database
-    const potentialExistingResults = await listDocuments(undefined, undefined, [
+    const resultsForCurrentGameNumber = await listDocuments(undefined, undefined, [
       Query.and([
         Query.equal('gameNumber', parsedWordle.gameNumber),
-        Query.equal('userId', parsedWordle.userId)
       ])
-    ]);
-    if (potentialExistingResults?.total === 0) {
+    ]) || { total: 0, documents: [] } as Models.DocumentList<Models.Document>;
+
+    const existingResultForUser = resultsForCurrentGameNumber.documents.find((doc) => doc.userId === parsedWordle.userId);
+    if (!existingResultForUser) {
       const documentAdded = await createDocument(parsedWordle) as Models.Document;
       if (documentAdded) {
-        wordleResultsData.push(parsedWordle);
-        wordleResultsData.sort((a, b) => b.gameNumber - a.gameNumber);
+        resultsForCurrentGameNumber.documents.push(documentAdded);
         console.log(`Result added to the database: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
+      } else {
+        console.error(`Error adding result to the database: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
       }
     } else {
       console.log(`Result already exists: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
     }
 
-    // Replace with a database query to see if there are any results with a gameNumber greater than the current gameNumber
-    const latestGameNumber = findLatestGameNumber(wordleResultsData);
-    console.log('Latest Game Number:', latestGameNumber);
+    const resultsAsUserScore = resultsForCurrentGameNumber.documents.map((doc) => ({
+      userId: doc.userId,
+      userName: doc.userName,
+      gameNumber: doc.gameNumber,
+      attempts: doc.attempts,
+    } as UserScore));
+    console.log('Scores for Latest Game Number:', resultsAsUserScore);
 
-    const scoresForLatestGame = wordleResultsData.filter((score) => score.gameNumber === latestGameNumber);
-    console.log('Scores for Latest Game Number:', scoresForLatestGame);
-
-    let results = determineWinners(scoresForLatestGame);
-    results.latestGameNumber = latestGameNumber;
+    let results = determineWinners(resultsAsUserScore);
     return results;
   }
 }
 
-function findLatestGameNumber(wordleResults: UserScore[]): number {
-  const latestGame = wordleResults.reduce((maxObj, currentObj) => {
-    if (!maxObj || currentObj.gameNumber > maxObj.gameNumber) {
-      return currentObj;
-    }
-    return maxObj;
-  }, null as UserScore | null);
-
-  return latestGame ? latestGame.gameNumber : 0;
-}
-
-function determineWinners(scoresForLargestGame: UserScore[]): { minAttempts: number, winners: string[], latestGameNumber: number; } {
+function determineWinners(scoresForLatestGame: UserScore[]): { minAttempts: number, winners: string[], latestGameNumber: number; } {
   let minAttempts = Infinity;
   const winners: string[] = [];
 
-  for (const score of scoresForLargestGame) {
+  for (const score of scoresForLatestGame) {
     const attempts = parseInt(score.attempts);
 
     if (attempts < minAttempts) {
@@ -189,7 +181,7 @@ function determineWinners(scoresForLargestGame: UserScore[]): { minAttempts: num
     }
   }
 
-  return { minAttempts, winners, latestGameNumber: scoresForLargestGame[0].gameNumber || 0 };
+  return { minAttempts, winners, latestGameNumber: scoresForLatestGame[0].gameNumber || 0 };
 }
 
 async function processCommand(message: any, channel: TextChannel) {
