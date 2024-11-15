@@ -131,7 +131,14 @@ function isLatestWordleAWinner(parsedWordle: UserScore | undefined, winners: str
 
 async function processLatestWordleResult(parsedWordle: UserScore | undefined): Promise<{ minAttempts: number, winners: string[], latestGameNumber: number; } | undefined> {
   if (parsedWordle !== undefined && Object.keys(parsedWordle).length > 0) {
-    if (!wordleResultsData.find((result: any) => result.gameNumber === parsedWordle.gameNumber && result.userId === parsedWordle.userId)) {
+    // Check if the result already exists in the database
+    const potentialExistingResults = await listDocuments(undefined, undefined, [
+      Query.and([
+        Query.equal('gameNumber', parsedWordle.gameNumber),
+        Query.equal('userId', parsedWordle.userId)
+      ])
+    ]);
+    if (potentialExistingResults?.total === 0) {
       const documentAdded = await createDocument(parsedWordle) as Models.Document;
       if (documentAdded) {
         wordleResultsData.push(parsedWordle);
@@ -142,6 +149,7 @@ async function processLatestWordleResult(parsedWordle: UserScore | undefined): P
       console.log(`Result already exists: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
     }
 
+    // Replace with a database query to see if there are any results with a gameNumber greater than the current gameNumber
     const latestGameNumber = findLatestGameNumber(wordleResultsData);
     console.log('Latest Game Number:', latestGameNumber);
 
