@@ -3,12 +3,18 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
+    "dev": "bun --watch src/server/index.ts",
+    "build": "bun build src/server/index.ts --target bun --outdir ./dist",
+    "start": "NODE_ENV=production bun dist/index.js",
+    "test": "bun test",
+    "start:bot": "bun run src/bot.ts",
+    "start:server": "bun run src/server/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/bun": "^1.1.13",
     "drizzle-kit": "^0.28.1"
   },
   "peerDependencies": {
@@ -16,7 +22,10 @@
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
+    "@elysiajs/swagger": "^1.1.5",
     "discord.js": "^14.16.3",
+    "elysia": "^1.1.24",
+    "hono": "^4.6.9",
     "drizzle-orm": "^0.36.3"
   }
 }
