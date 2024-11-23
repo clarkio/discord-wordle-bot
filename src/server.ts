@@ -1,10 +1,9 @@
-import { Client, Events, GatewayIntentBits, ModalSubmitFields, TextChannel } from 'discord.js';
+import { GatewayIntentBits, TextChannel } from 'discord.js';
 import type { Models } from 'node-appwrite';
 import fs from 'fs';
 import path from 'path';
-import { createDocument, listDocuments, Query } from './db';
 import { CustomClient } from './CustomClient';
-import { ModuleDetectionKind } from 'typescript';
+import { TursoDatabaseProvider } from './db/turso';
 
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '';
 const isUserTaggingEnabled = process.env.USER_TAGGING_ENABLED === 'true';
@@ -17,7 +16,7 @@ const client = new CustomClient({
   ],
 });
 interface UserScore {
-  userId: string;
+  discordId: string;
   userName: string;
   gameNumber: number;
   attempts: string;
@@ -51,15 +50,18 @@ for (const filePath of commandFiles) {
 }
 
 // TODO: Remove this as it's not a good idea.
-const dbData = await listDocuments(undefined, undefined, [
-  Query.orderDesc('gameNumber'),
-]) || { documents: [] };
-const wordleResultsData = dbData.documents.map((doc) => ({
-  userId: doc.userId,
-  userName: doc.userName,
-  gameNumber: doc.gameNumber,
-  attempts: doc.attempts,
-} as UserScore));
+// Instantiate the database client
+const db = new TursoDatabaseProvider();
+
+// const dbData = await listDocuments(undefined, undefined, [
+//   Query.orderDesc('gameNumber'),
+// ]) || { documents: [] };
+// const wordleResultsData = dbData.documents.map((doc) => ({
+//   userId: doc.userId,
+//   userName: doc.userName,
+//   gameNumber: doc.gameNumber,
+//   attempts: doc.attempts,
+// } as UserScore));
 
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user?.tag}!`);
@@ -88,6 +90,26 @@ client.on('messageCreate', async (message) => {
   }
 });
 
+async function determineWinners(scores: UserScore[]): UserScore[] {
+  if (!scores || scores.length === 0) return [];
+
+  // Convert attempts to numbers for comparison (X becomes 7)
+  const scoresWithNumericAttempts = scores.map(score => ({
+    ...score,
+    numericAttempts: score.attempts.toUpperCase() === 'X' ? 7 : parseInt(score.attempts)
+  }));
+
+  // Find minimum attempts
+  const minAttempts = Math.min(
+    ...scoresWithNumericAttempts.map(score => score.numericAttempts)
+  );
+
+  // Return all scores that match minimum attempts
+  return scores.filter((_, index) =>
+    scoresWithNumericAttempts[index].numericAttempts === minAttempts
+  );
+}
+
 async function processCurrentResults(currentResults: { minAttempts: number, winners: string[], latestGameNumber: number; } | undefined, parsedWordle: UserScore | undefined, message: any) {
   try {
     if (currentResults) {
@@ -105,7 +127,7 @@ async function processCurrentResults(currentResults: { minAttempts: number, winn
 
 function parseWordleResult(message: any): UserScore | undefined {
   const userName = message.author.username;
-  const userId = message.author.id;
+  const discordId = message.author.id;
   const match = wordlePattern.exec(message.content);
 
   if (match) {
@@ -113,7 +135,7 @@ function parseWordleResult(message: any): UserScore | undefined {
     const attempts = match[4];
 
     return {
-      userId,
+      discordId,
       userName,
       gameNumber,
       attempts,
@@ -127,23 +149,23 @@ function isLatestWordleAWinner(parsedWordle: UserScore | undefined, winners: str
   return parsedWordle !== undefined
     && Object.keys(parsedWordle).length > 0
     && winners.length > 0
-    && (winners.includes(parsedWordle.userName) || winners.includes(`<@${parsedWordle.userId}>`));
+    && (winners.includes(parsedWordle.userName) || winners.includes(`<@${parsedWordle.discordId}>`));
 }
 
 async function processLatestWordleResult(parsedWordle: UserScore | undefined): Promise<{ minAttempts: number, winners: string[], latestGameNumber: number; } | undefined> {
   if (parsedWordle !== undefined && Object.keys(parsedWordle).length > 0) {
     // Check if the result already exists in the database
-    const resultsForCurrentGameNumber = await listDocuments(undefined, undefined, [
-      Query.and([
-        Query.equal('gameNumber', parsedWordle.gameNumber),
-      ])
-    ]) || { total: 0, documents: [] } as Models.DocumentList<Models.Document>;
+    const scoresForCurrentGameNumber = await db.getScoresByNumber(parsedWordle.gameNumber);
 
-    const existingResultForUser = resultsForCurrentGameNumber.documents.find((doc) => doc.userId === parsedWordle.userId);
+    const existingResultForUser = scoresForCurrentGameNumber.find((score) => score.discordId === parsedWordle.discordId);
     if (!existingResultForUser) {
-      const documentAdded = await createDocument(parsedWordle) as Models.Document;
-      if (documentAdded) {
-        resultsForCurrentGameNumber.documents.push(documentAdded);
+      await db.createPlayer(parsedWordle.discordId, parsedWordle.userName);
+      if (scoresForCurrentGameNumber.length === 0) {
+        await db.createWordle(parsedWordle.gameNumber);
+      }
+      const addedScore = await db.createScore(parsedWordle.discordId, parsedWordle.gameNumber, parsedWordle.attempts);
+      if (addedScore) {
+        scoresForCurrentGameNumber.push(addedScore);
         console.log(`Result added to the database: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
       } else {
         console.error(`Error adding result to the database: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
@@ -152,9 +174,9 @@ async function processLatestWordleResult(parsedWordle: UserScore | undefined): P
       console.log(`Result already exists: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
     }
 
-    const resultsAsUserScore = resultsForCurrentGameNumber.documents.map((doc) => ({
-      userId: doc.userId,
-      userName: doc.userName,
+    const resultsAsUserScore = scoresForCurrentGameNumber.map((doc) => ({
+      discordId: doc.discordId,
+      userName: doc.,
       gameNumber: doc.gameNumber,
       attempts: doc.attempts,
     } as UserScore));
@@ -165,24 +187,24 @@ async function processLatestWordleResult(parsedWordle: UserScore | undefined): P
   }
 }
 
-function determineWinners(scoresForLatestGame: UserScore[]): { minAttempts: number, winners: string[], latestGameNumber: number; } {
-  let minAttempts = Infinity;
-  const winners: string[] = [];
+// function determineWinners(scoresForLatestGame: UserScore[]): { minAttempts: number, winners: string[], latestGameNumber: number; } {
+//   let minAttempts = Infinity;
+//   const winners: string[] = [];
 
-  for (const score of scoresForLatestGame) {
-    const attempts = parseInt(score.attempts);
+//   for (const score of scoresForLatestGame) {
+//     const attempts = parseInt(score.attempts);
 
-    if (attempts < minAttempts) {
-      minAttempts = attempts;
-      winners.length = 0; // Clear the winners array
-      isUserTaggingEnabled ? winners.push(`<@${score.userId}>`) : winners.push(`${score.userName}`);
-    } else if (attempts === minAttempts) {
-      isUserTaggingEnabled ? winners.push(`<@${score.userId}>`) : winners.push(`${score.userName}`);
-    }
-  }
+//     if (attempts < minAttempts) {
+//       minAttempts = attempts;
+//       winners.length = 0; // Clear the winners array
+//       isUserTaggingEnabled ? winners.push(`<@${score.discordId}>`) : winners.push(`${score.userName}`);
+//     } else if (attempts === minAttempts) {
+//       isUserTaggingEnabled ? winners.push(`<@${score.discordId}>`) : winners.push(`${score.userName}`);
+//     }
+//   }
 
-  return { minAttempts, winners, latestGameNumber: scoresForLatestGame[0].gameNumber || 0 };
-}
+//   return { minAttempts, winners, latestGameNumber: scoresForLatestGame[0].gameNumber || 0 };
+// }
 
 async function processCommand(message: any, channel: TextChannel) {
   try {
