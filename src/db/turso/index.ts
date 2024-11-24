@@ -126,7 +126,6 @@ export class TursoDatabaseProvider implements IDatabaseProvider {
 
     const isFirstGame = typeof gameNumber === 'string' && gameNumber.toLowerCase() === 'first';
     const isSpecificGame = gameNumber ? !Number.isNaN(parseInt(gameNumber)) : false;
-    console.log(isFirstGame, isSpecificGame);
 
     if (isSpecificGame) {
       const gameNumberInt = parseInt(gameNumber!);
@@ -135,6 +134,7 @@ export class TursoDatabaseProvider implements IDatabaseProvider {
       const scores = await this.getScoresById(userId, isFirstGame);
       userScore = scores[0];
     }
+
     return userScore;
   }
 }
