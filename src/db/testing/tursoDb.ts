@@ -1,17 +1,13 @@
 import { TursoDatabaseProvider } from '../turso';
 
 const db = new TursoDatabaseProvider();
-const scores = await db.getScoresByNumber(1252);
+const scores = await db.getScoresByNumber(1254);
 console.dir(scores, { depth: null });
 
-// interface UserScore {
-//   discordId: string;
-//   discordName: string;
-//   gameNumber: number;
-//   attempts: string;
-//   isWin?: number;
-//   isTie?: number;
-// }
+// const wordle = await db.createWordle(1254);
+// const score = await db.createScore('294639347192561664', 1254, '1', 0, 0);
+// console.dir(score, { depth: null });
+
 // const gameNumber = 2;
 // const discordId = "5";
 // await createWordle(gameNumber);

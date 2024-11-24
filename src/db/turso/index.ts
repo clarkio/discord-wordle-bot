@@ -3,7 +3,7 @@ import { createClient, type Client } from "@libsql/client";
 import * as schema from './schema.ts';
 import type { IScore } from '../entities/IScore';
 import type { IDatabaseProvider } from '../entities/IDatabaseProvider';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc, desc } from 'drizzle-orm';
 import { scoresTable, wordlesTable, playersTable } from './schema.ts';
 
 export class TursoDatabaseProvider implements IDatabaseProvider {
@@ -35,19 +35,23 @@ export class TursoDatabaseProvider implements IDatabaseProvider {
     this.db.$client.close();
   }
 
-  public async getScoresById(discordId: string): Promise<IScore[]> {
+  public async getScoresById(discordId: string, ascending?: boolean): Promise<IScore[]> {
+    const orderByQuery = ascending ? asc(scoresTable.gameNumber) : desc(scoresTable.gameNumber);
     return this.db.query.scoresTable.findMany({
       where: eq(scoresTable.discordId, discordId), with: {
         player: true
-      }
+      },
+      orderBy: orderByQuery
     });
   }
 
-  public async getScoreByIdAndNumber(discordId: string, gameNumber: number): Promise<IScore | undefined> {
+  public async getScoreByIdAndNumber(discordId: string, gameNumber: number, ascending?: boolean): Promise<IScore | undefined> {
+    const orderByQuery = ascending ? asc(scoresTable.gameNumber) : desc(scoresTable.gameNumber);
     return this.db.query.scoresTable.findFirst({
       where: and(eq(scoresTable.gameNumber, gameNumber), eq(scoresTable.discordId, discordId)), with: {
         player: true
-      }
+      },
+      orderBy: orderByQuery
     });
   }
 
@@ -81,10 +85,17 @@ export class TursoDatabaseProvider implements IDatabaseProvider {
 
   public async createScore(discordId: string, gameNumber: number, attempts: string, isWin: number = 0, isTie: number = 0): Promise<IScore | undefined> {
     const result = await this.db.insert(scoresTable).values({ discordId, gameNumber, attempts, isWin, isTie }).onConflictDoNothing().returning();
+
     if (result.length === 0) {
       return;
     }
-    return result[0];
+
+    const score = await this.db.query.scoresTable.findFirst({
+      where: and(eq(scoresTable.gameNumber, gameNumber), eq(scoresTable.discordId, discordId)), with: {
+        player: true
+      }
+    });
+    return score;
   }
 
   public async updateScore(discordId: string, gameNumber: number, attempts: string, isWin: number = 0, isTie: number = 0): Promise<boolean> {
@@ -96,24 +107,34 @@ export class TursoDatabaseProvider implements IDatabaseProvider {
       return false;
     }
   }
+
+  /*
+  * Get the user's game results.
+  * @param userId The user's ID.
+  * @param gameNumber The game number to get results for. If "first", get the first game's results.
+  * @returns The user's game results.
+  * Example triggers to use this function:
+  * !results
+  *  - Get's the most recent game results.
+  * !results 123
+  * - Get's the results for game 123.
+  * !results first
+  * - Get's the results for the first game.
+*/
+  public async getUserGameResults(userId: string, gameNumber?: string): Promise<IScore | undefined> {
+    let userScore = undefined;
+
+    const isFirstGame = typeof gameNumber === 'string' && gameNumber.toLowerCase() === 'first';
+    const isSpecificGame = gameNumber ? !Number.isNaN(parseInt(gameNumber)) : false;
+    console.log(isFirstGame, isSpecificGame);
+
+    if (isSpecificGame) {
+      const gameNumberInt = parseInt(gameNumber!);
+      userScore = await this.getScoreByIdAndNumber(userId, gameNumberInt);
+    } else {
+      const scores = await this.getScoresById(userId, isFirstGame);
+      userScore = scores[0];
+    }
+    return userScore;
+  }
 }
-
-// function determineWinners(scores: UserScore[]): UserScore[] {
-//   if (!scores || scores.length === 0) return [];
-
-//   // Convert attempts to numbers for comparison (X becomes 7)
-//   const scoresWithNumericAttempts = scores.map(score => ({
-//     ...score,
-//     numericAttempts: score.attempts.toUpperCase() === 'X' ? 7 : parseInt(score.attempts)
-//   }));
-
-//   // Find minimum attempts
-//   const minAttempts = Math.min(
-//     ...scoresWithNumericAttempts.map(score => score.numericAttempts)
-//   );
-
-//   // Return all scores that match minimum attempts
-//   return scores.filter((_, index) =>
-//     scoresWithNumericAttempts[index].numericAttempts === minAttempts
-//   );
-// }

@@ -1,7 +1,10 @@
+import type { IPlayer } from './IPlayer';
+
 export interface IScore {
-  discordId: string | null;
-  gameNumber: number | null;
+  discordId: string;
+  gameNumber: number;
   attempts: string;
   isWin: number | null;
   isTie: number | null;
+  player?: IPlayer | null;
 }
