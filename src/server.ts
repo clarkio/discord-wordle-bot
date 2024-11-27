@@ -1,5 +1,4 @@
 import { GatewayIntentBits, TextChannel } from 'discord.js';
-import type { Models } from 'node-appwrite';
 import fs from 'fs';
 import path from 'path';
 import { CustomClient } from './CustomClient';
@@ -83,10 +82,15 @@ client.on('messageCreate', async (message) => {
 async function determineWinners(scores: IScore[]): Promise<IScore[]> {
   if (!scores || scores.length === 0) return [];
 
-  // Convert attempts to numbers for comparison (X becomes 7)
-  const scoresWithNumericAttempts = scores.map(score => ({
+  // Filter out failed attempts (X) before processing
+  const validScores = scores.filter(score => score.attempts.toUpperCase() !== 'X');
+
+  if (validScores.length === 0) return [];
+
+  // Convert attempts to numbers for comparison
+  const scoresWithNumericAttempts = validScores.map(score => ({
     ...score,
-    numericAttempts: score.attempts.toUpperCase() === 'X' ? 7 : parseInt(score.attempts)
+    numericAttempts: parseInt(score.attempts)
   }));
 
   // Find minimum attempts
@@ -95,7 +99,7 @@ async function determineWinners(scores: IScore[]): Promise<IScore[]> {
   );
 
   // Return all scores that match minimum attempts
-  return scores.filter((_, index) =>
+  return validScores.filter((_, index) =>
     scoresWithNumericAttempts[index].numericAttempts === minAttempts
   );
 }
