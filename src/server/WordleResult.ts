@@ -1,19 +1,15 @@
 import { Elysia, t } from 'elysia';
-import { getUserGameResults } from '../user-stats';
+import { TursoDatabaseProvider } from '../db/turso';
 
 class WordleResult {
-  constructor (public data: string[] = ['Moonhalo']) { }
+  private db: TursoDatabaseProvider = new TursoDatabaseProvider();
+  constructor (public data: string[] = ['Moonhalo']) {
+  }
 
   async getWordle(userIdToSearch: string, gameNumberToSearch?: number) {
-    const results = await getUserGameResults(userIdToSearch, gameNumberToSearch?.toString());
-    // Destructure the results object to extract only the desired properties
-    if (!results) {
-      return {};
-    }
-    const { userId, userName, gameNumber, attempts } = results;
+    const results = gameNumberToSearch ? await this.db.getScoreByIdAndNumber(userIdToSearch, gameNumberToSearch) : await this.db.getScoresById(userIdToSearch);
 
-    // Return a new object with only the desired properties
-    return { userId, userName, gameNumber, attempts };
+    return results;
   }
 }
 

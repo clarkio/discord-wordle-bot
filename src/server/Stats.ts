@@ -1,32 +1,42 @@
 import { Elysia, t } from 'elysia';
-import { getUserGameResults } from '../user-stats';
+import { TursoDatabaseProvider } from '../db/turso';
 
 class Stats {
+  private db: TursoDatabaseProvider = new TursoDatabaseProvider();
   constructor () { }
 
   async getUserStats(userIdToSearch: string) {
-    const results = await getUserGameResults(userIdToSearch);
-    // Destructure the results object to extract only the desired properties
-    if (!results) {
-      return {};
-    }
-    const { userId, userName, gameNumber, attempts } = results;
+    const results = await this.db.getScoresById(userIdToSearch);
+    return results;
+  }
 
-    // Return a new object with only the desired properties
-    return { userId, userName, gameNumber, attempts };
+  async getAllScores() {
+    const results = await this.db.getScores();
+    return results;
+  }
+
+  async getLeaderboard() {
+    const results = await this.db.getLeaderboard();
+    return results;
   }
 }
 
-export const wordleResult = new Elysia()
+export const stats = new Elysia()
   .decorate('stats', new Stats())
   .get(
-    '/stats/:userId',
-    async ({ stats, params: { userId }, error }) => {
-      return await stats.getUserStats(userId) ?? error(404, 'Unable to get Wordle result.');
-    },
-    {
-      params: t.Object({
-        userId: t.String()
-      })
+    '/stats',
+    async ({ stats }) => {
+      return await stats.getLeaderboard();
     }
   );
+// .get(
+//   '/stats/:userId',
+//   async ({ stats, params: { userId }, error }) => {
+//     return await stats.getUserStats(userId) ?? error(404, 'Unable to get Wordle result.');
+//   },
+//   {
+//     params: t.Object({
+//       userId: t.String()
+//     })
+//   }
+// );
