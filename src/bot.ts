@@ -233,4 +233,6 @@ async function processCommand(message: any, channel: TextChannel) {
   }
 }
 
-await client.login(process.env.BOT_TOKEN);
+export async function startBot() {
+  await client.login(process.env.BOT_TOKEN);
+}
