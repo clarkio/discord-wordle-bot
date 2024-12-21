@@ -54,38 +54,51 @@ export class TursoDatabaseProvider implements IDatabaseProvider {
         LEFT JOIN scores s ON p.discord_id = s.discord_id
         WHERE p.is_opted_in = 1
       ),
-      win_streaks AS (
-        SELECT
-          discord_id,
-          COUNT(*) as streak_length
-        FROM (
-          SELECT
-            s1.discord_id,
-            s1.game_number,
-            COUNT(*) as streak_length
-          FROM scores s1
-          JOIN scores s2 ON s1.discord_id = s2.discord_id
-            AND s2.game_number <= s1.game_number
-            AND s2.is_win = 1
-          WHERE s1.is_win = 1
-          GROUP BY s1.discord_id, s1.game_number
+consecutive_games AS (
+  SELECT
+    discord_id,
+    game_number,
+    (
+      SELECT COUNT(*)
+      FROM scores s2
+      WHERE s2.discord_id = s1.discord_id
+        AND s2.is_win = 1
+        AND s2.game_number <= s1.game_number
+        AND NOT EXISTS (
+          SELECT 1
+          FROM scores s3
+          WHERE s3.discord_id = s1.discord_id
+            AND s3.game_number < s1.game_number
+            AND s3.game_number > s2.game_number
+            AND (s3.is_win = 0 OR s3.game_number != s2.game_number + 1)
         )
-        GROUP BY discord_id
-      )
-      SELECT
+    ) as streak_length
+  FROM scores s1
+  WHERE is_win = 1
+),
+win_streaks AS (
+  SELECT
+    discord_id,
+    MAX(streak_length) as streak_length
+  FROM consecutive_games
+  GROUP BY discord_id
+)
+SELECT
         s.discord_id,
         s.discord_name,
         COUNT(CASE WHEN s.is_win = 1 AND s.is_tie = 0 THEN 1 END) as wins,
         ROUND(CAST(COUNT(CASE WHEN s.is_win = 1 AND s.is_tie = 0 THEN 1 END) AS FLOAT) / COUNT(*) * 100, 2) as win_percent,
-        COUNT(CASE WHEN s.is_win = 0 AND s.attempts != 'X' THEN 1 END) as losses,
-        ROUND(CAST(COUNT(CASE WHEN s.is_win = 0 AND s.attempts != 'X' THEN 1 END) AS FLOAT) / COUNT(*) * 100, 2) as loss_percent,
+        COUNT(CASE WHEN s.is_win = 0 AND s.is_tie = 0 THEN 1 END) as losses,
+        ROUND(CAST(COUNT(CASE WHEN s.is_win = 0 AND s.is_tie = 0 THEN 1 END) AS FLOAT) / COUNT(*) * 100, 2) as loss_percent,
         COUNT(CASE WHEN s.is_tie = 1 THEN 1 END) as ties,
         ROUND(CAST(COUNT(CASE WHEN s.is_tie = 1 THEN 1 END) AS FLOAT) / COUNT(*) * 100, 2) as tie_percent,
+        COUNT(CASE WHEN s.attempts != 'X' THEN 1 END) as successes,
+        ROUND(CAST(COUNT(CASE WHEN s.attempts != 'X' THEN 1 END) AS FLOAT) / COUNT(*) * 100, 2) as success_percent,
         COUNT(CASE WHEN s.attempts = 'X' THEN 1 END) as failures,
         ROUND(CAST(COUNT(CASE WHEN s.attempts = 'X' THEN 1 END) AS FLOAT) / COUNT(*) * 100, 2) as failure_percent,
         ROUND(AVG(CASE
-          WHEN s.attempts != 'X'
-          THEN CAST(s.attempts AS INTEGER)
+          WHEN s.attempts = 'X' THEN 7
+          ELSE CAST(s.attempts AS INTEGER)
           END), 2) as avg_attempts,
         COUNT(*) as total_games,
         COALESCE(MAX(w.streak_length), 0) as longest_win_streak

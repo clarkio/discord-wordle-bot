@@ -7,8 +7,11 @@ export interface ILeaderboardEntry {
   loss_percent: number;
   ties: number;
   tie_percent: number;
+  successes: number;
+  success_percent: number;
   failures: number;
   failure_percent: number;
   avg_attempts: number;
   total_games: number;
+  longest_win_streak: number;
 }
