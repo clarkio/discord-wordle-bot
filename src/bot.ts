@@ -52,7 +52,7 @@ for (const filePath of commandFiles) {
 // Instantiate the database client
 const db = new TursoDatabaseProvider();
 
-client.once('ready', async () => {
+client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user?.tag}!`);
 
   const channel = await client.channels.fetch(TARGET_CHANNEL_ID) as TextChannel;
