@@ -9,7 +9,7 @@ const app = new Elysia()
   .use(swagger())
   .use(cors())
   .use(stats)
-  .listen(3000);
+  .listen(process.env.PORT || 3000);
 
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`

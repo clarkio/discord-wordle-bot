@@ -132,3 +132,5 @@ dist
 localDb
 migrations
 drizzle
+
+.vscode/
