@@ -72,6 +72,7 @@ client.on('messageCreate', async (message) => {
   if (parsedWordle) {
     const currentResults = await processLatestWordleResult(parsedWordle);
     await processCurrentResults(currentResults, parsedWordle, message);
+    await message.react('✅');
   } else if (message.content.startsWith(PREFIX)) {
     await processCommand(message, message.channel as TextChannel);
   } else {
@@ -233,4 +234,6 @@ async function processCommand(message: any, channel: TextChannel) {
   }
 }
 
-await client.login(process.env.BOT_TOKEN);
+export async function startBot() {
+  await client.login(process.env.BOT_TOKEN);
+}

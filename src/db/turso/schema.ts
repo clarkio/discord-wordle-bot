@@ -10,6 +10,7 @@ export const playersTable = sqliteTable('players', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   discordId: text('discord_id').notNull().unique(),
   discordName: text('discord_name').notNull(),
+  isOptedIn: integer('is_opted_in').default(0),
 });
 
 export const scoresTable = sqliteTable('scores', {
