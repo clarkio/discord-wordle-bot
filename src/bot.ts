@@ -4,9 +4,12 @@ import path from 'path';
 import { CustomClient } from './CustomClient';
 import { TursoDatabaseProvider } from './db/turso';
 import type { IScore } from './db/entities/IScore';
+import { parseIgnoredUserIds, processLatestWordleResult } from './wordle-processor';
+import type { UserScore } from './wordle-processor';
 
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '';
 const isUserTaggingEnabled = process.env.USER_TAGGING_ENABLED === 'true';
+const ignoredUserIds = parseIgnoredUserIds(process.env.IGNORED_USER_IDS || '');
 const wordlePattern = /Wordle (\d{0,3}(,?)\d{1,3}) (🎉 ?)?([X1-6])\/6/;
 const client = new CustomClient({
   intents: [
@@ -15,13 +18,6 @@ const client = new CustomClient({
     GatewayIntentBits.MessageContent,
   ],
 });
-interface UserScore {
-  discordId: string;
-  userName: string;
-  gameNumber: number;
-  attempts: string;
-}
-
 const PREFIX = '!';
 const commandsPath = path.join(__dirname, 'commands');
 
@@ -70,7 +66,7 @@ client.on('messageCreate', async (message) => {
   // determine if the message is a wordle result, a command or can be ignored
   const parsedWordle = parseWordleResult(message);
   if (parsedWordle) {
-    const currentResults = await processLatestWordleResult(parsedWordle);
+    const currentResults = await processLatestWordleResult(parsedWordle, db, ignoredUserIds);
     await processCurrentResults(currentResults, parsedWordle, message);
     await message.react('✅');
   } else if (message.content.startsWith(PREFIX)) {
@@ -181,30 +177,6 @@ function isLatestWordleAWinner(parsedWordle: UserScore | undefined, winners: str
   return parsedWordle !== undefined
     && Object.keys(parsedWordle).length > 0
     && (winners.includes(parsedWordle.userName) || winners.includes(`<@${parsedWordle.discordId}>`));
-}
-
-async function processLatestWordleResult(parsedWordle: UserScore): Promise<IScore[]> {
-  // Check if the result already exists in the database
-  const scoresForCurrentGameNumber = await db.getScoresByNumber(parsedWordle.gameNumber);
-
-  const existingResultForUser = scoresForCurrentGameNumber.find((score) => score.discordId === parsedWordle.discordId);
-  if (!existingResultForUser) {
-    await db.createPlayer(parsedWordle.discordId, parsedWordle.userName);
-    if (scoresForCurrentGameNumber.length === 0) {
-      await db.createWordle(parsedWordle.gameNumber);
-    }
-    const addedScore = await db.createScore(parsedWordle.discordId, parsedWordle.gameNumber, parsedWordle.attempts);
-    if (addedScore) {
-      scoresForCurrentGameNumber.push(addedScore);
-      console.log(`Result added to the database: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
-    } else {
-      console.error(`Error adding result to the database: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
-    }
-  } else {
-    console.log(`Result already exists: ${parsedWordle.gameNumber} - ${parsedWordle.userName}`);
-  }
-
-  return scoresForCurrentGameNumber;
 }
 
 async function processCommand(message: any, channel: TextChannel) {
