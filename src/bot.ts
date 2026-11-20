@@ -63,6 +63,9 @@ client.on('messageCreate', async (message) => {
   // Ignore messages from bots
   if (message.author.bot) return;
 
+  // Only listen to messages in the configured channel (fail closed if unset)
+  if (!TARGET_CHANNEL_ID || message.channelId !== TARGET_CHANNEL_ID) return;
+
   // determine if the message is a wordle result, a command or can be ignored
   const parsedWordle = parseWordleResult(message);
   if (parsedWordle) {
