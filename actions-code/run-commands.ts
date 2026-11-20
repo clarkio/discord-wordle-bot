@@ -72,6 +72,10 @@ async function handleMessage(message: any, channel: TextChannel) {
   // Ignore messages from bots
   if (message.author.bot) return;
 
+  // Only handle commands from the configured channel (fail closed if unset)
+  const messageChannelId = message.channelId ?? message.channel_id;
+  if (!TARGET_CHANNEL_ID || messageChannelId !== TARGET_CHANNEL_ID) return;
+
   // Check if the message starts with the prefix
   if (!message.content.startsWith(PREFIX)) return;
 
